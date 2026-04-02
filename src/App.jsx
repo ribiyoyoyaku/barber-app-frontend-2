@@ -269,8 +269,6 @@ const PX_PER_HOUR = 60;
 const START_HOUR = 9;
 const END_HOUR = 21;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
-
-// ★ 変更①：時間ラベル列の幅を56pxに拡大
 const TIME_COL_WIDTH = 64;
 
 function timeToY(timeStr) {
@@ -339,7 +337,6 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
 
   const hourLabels = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => i + START_HOUR);
 
-  // 日ビュー：スタッフ列ごとに予約チップを絶対配置
   const DayViewColumn = ({ staffMember }) => {
     const dayBookings = bookingsOn(fmt(currentDate)).filter(b => b.staffId === staffMember.id);
     const totalH = TOTAL_HOURS * PX_PER_HOUR;
@@ -414,7 +411,6 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
 
   return (
     <div>
-      {/* Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: "0.25rem" }}>
           {["day","week","month"].map(v => (
@@ -449,7 +445,6 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         <button onClick={() => setModal({ booking: null })} style={{ ...mkBtn("primary"), marginLeft: "auto", padding: "0.45rem 1rem", fontSize: "0.88rem" }}>＋ 予約</button>
       </div>
 
-      {/* Month View */}
       {view === "month" && (() => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -522,11 +517,9 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         );
       })()}
 
-      {/* ★ Week View — 時間ラベル幅を TIME_COL_WIDTH(56px) に変更 */}
       {view === "week" && (
         <div style={{ borderRadius: "12px", border: "1px solid #e4eaf4", background: "#fff", overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
-            {/* ヘッダー行 */}
             <div style={{ display: "flex", borderBottom: "2px solid #e4eaf4", background: "#f8fafd", minWidth: "790px" }}>
               <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0 }} />
               {days.map(d => {
@@ -541,9 +534,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
                 );
               })}
             </div>
-            {/* 時間軸本体 */}
             <div style={{ display: "flex", minWidth: "790px" }}>
-              {/* ★ 時間ラベル列：幅56px・フォント0.85rem */}
               <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0, position: "relative", height: `${TOTAL_HOURS * PX_PER_HOUR}px`, background: "#fafbfe" }}>
                 {hourLabels.map(h => (
                   <div key={h} style={{
@@ -554,7 +545,6 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
                   </div>
                 ))}
               </div>
-              {/* 曜日ごとの列 */}
               {days.map(d => {
                 const isToday = fmt(d) === fmt(today);
                 const dayBks = bookingsOn(fmt(d));
@@ -640,10 +630,8 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         </div>
       )}
 
-      {/* ★ Day View — 時間ラベル幅を TIME_COL_WIDTH(56px) に変更 */}
       {view === "day" && (
         <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid #e4eaf4", background: "#fff" }}>
-          {/* ヘッダー行（スタッフ名） */}
           <div style={{ display: "flex", borderBottom: "2px solid #e4eaf4", background: "#f8fafd", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0 }} />
             {staff.map(s => (
@@ -653,9 +641,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
               </div>
             ))}
           </div>
-          {/* 時間軸グリッド本体 */}
           <div style={{ display: "flex" }}>
-            {/* ★ 時間ラベル列：幅56px・フォント0.85rem */}
             <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0, position: "relative", height: `${TOTAL_HOURS * PX_PER_HOUR}px`, background: "#fafbfe" }}>
               {hourLabels.map(h => (
                 <div key={h} style={{
@@ -666,7 +652,6 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
                 </div>
               ))}
             </div>
-            {/* スタッフごとの列 */}
             {staff.map(s => (
               <div key={s.id} style={{ flex: 1, minWidth: "110px" }}>
                 <DayViewColumn staffMember={s} />
@@ -834,7 +819,7 @@ function CustomersTab({ customers, setCustomers, bookings, services }) {
 }
 
 // ============================================================
-// SALES TAB
+// SALES TAB  ★ 今日の売上・今週の売上を追加
 // ============================================================
 function SalesTab({ bookings, services, staff, customers }) {
   const [selectedMonth, setSelectedMonth] = useState(
@@ -868,6 +853,17 @@ function SalesTab({ bookings, services, staff, customers }) {
   };
 
   const active = bookings.filter(b => b.status !== "cancelled");
+
+  // ★ 今日・今週の計算
+  const todayStr = fmt(today);
+  const weekStartDate = new Date(today);
+  weekStartDate.setDate(today.getDate() - today.getDay());
+  const weekStartStr = fmt(weekStartDate);
+  const todaySales = active.filter(b => b.date === todayStr).reduce((a, b) => a + b.price, 0);
+  const todayCount = active.filter(b => b.date === todayStr).length;
+  const weeklySales = active.filter(b => b.date >= weekStartStr && b.date <= todayStr).reduce((a, b) => a + b.price, 0);
+  const weeklyCount = active.filter(b => b.date >= weekStartStr && b.date <= todayStr).length;
+
   const monthly = {};
   active.forEach(b => { const m = b.date.slice(0, 7); monthly[m] = (monthly[m] || 0) + b.price; });
   const monthKeys = Object.keys(monthly).sort();
@@ -892,14 +888,34 @@ function SalesTab({ bookings, services, staff, customers }) {
 
   return (
     <div>
+      {/* ★ 今日・今週カード */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+        {[
+          ["🌅 今日の売上", `¥${todaySales.toLocaleString()}`, `${todayCount}件`, "#e07b7b"],
+          ["📅 今週の売上", `¥${weeklySales.toLocaleString()}`, `${weeklyCount}件`, "#e09b4a"],
+        ].map(([k, v, sub, c]) => (
+          <div key={k} style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1rem 0.75rem" }}>
+            <div style={{ color: "#8896aa", fontSize: "0.65rem", textTransform: "uppercase", fontWeight: "600", marginBottom: "0.2rem" }}>{k}</div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", color: c, marginTop: "0.1rem" }}>{v}</div>
+            <div style={{ color: "#a0aec0", fontSize: "0.7rem", marginTop: "0.2rem" }}>{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 今月・件数・客単価カード */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.75rem", marginBottom: "1.25rem" }}>
-        {[["今月売上",`¥${totalThisMonth.toLocaleString()}`,"#4a8fd4"],["予約件数",`${bookingsThisMonth}件`,"#3d5a80"],["客単価",`¥${bookingsThisMonth > 0 ? Math.round(totalThisMonth / bookingsThisMonth).toLocaleString() : 0}`,"#6bbf8f"]].map(([k,v,c]) => (
+        {[
+          ["今月売上", `¥${totalThisMonth.toLocaleString()}`, null, "#4a8fd4"],
+          ["予約件数", `${bookingsThisMonth}件`, null, "#3d5a80"],
+          ["客単価", `¥${bookingsThisMonth > 0 ? Math.round(totalThisMonth / bookingsThisMonth).toLocaleString() : 0}`, null, "#6bbf8f"],
+        ].map(([k, v, sub, c]) => (
           <div key={k} style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1rem 0.75rem" }}>
             <div style={{ color: "#8896aa", fontSize: "0.65rem", textTransform: "uppercase", fontWeight: "600" }}>{k}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", color: c, marginTop: "0.2rem" }}>{v}</div>
           </div>
         ))}
       </div>
+
       <div style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1rem", marginBottom: "1rem" }}>
         <div style={{ color: "#8896aa", fontSize: "0.7rem", fontWeight: "600", marginBottom: "0.6rem" }}>💾 データのバックアップ</div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -934,7 +950,7 @@ function SalesTab({ bookings, services, staff, customers }) {
 }
 
 // ============================================================
-// MENU MANAGEMENT — ★ ↑↓ボタンで並び替え（スマホ対応）
+// MENU MANAGEMENT
 // ============================================================
 const COLOR_PRESETS = ["#fde8b0","#c8e6fb","#ffd6d6","#e8d5f5","#d5f0e8","#ffe5c8","#d5eaf5","#f5d5e8","#e8f5d5","#f5e8d5","#dff5f5","#f5dfd5"];
 
@@ -974,7 +990,6 @@ function MenuManagementTab({ services, setServices }) {
     } catch (e) { alert(e.message); }
   };
 
-  // ↑↓ 移動
   const moveItem = (i, dir) => {
     const next = [...services];
     const target = i + dir;
@@ -1049,58 +1064,20 @@ function MenuManagementTab({ services, setServices }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {services.map((sv, i) => (
-          <div
-            key={sv.id}
-            style={{
-              background: "#fff",
-              border: "1.5px solid #e4eaf4",
-              borderRadius: "12px",
-              padding: "0.75rem 0.75rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.6rem",
-            }}
-          >
-            {/* ↑↓ ボタン */}
+          <div key={sv.id} style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "0.75rem 0.75rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }}>
-              <button
-                onClick={() => moveItem(i, -1)}
-                disabled={i === 0}
-                style={{
-                  width: "28px", height: "28px", border: "1px solid #dde3ec",
-                  borderRadius: "6px", background: i === 0 ? "#f8fafd" : "#f0f4f8",
-                  color: i === 0 ? "#d0d8e4" : "#6b7c93",
-                  cursor: i === 0 ? "default" : "pointer",
-                  fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: "700", lineHeight: 1,
-                }}
-              >↑</button>
-              <button
-                onClick={() => moveItem(i, 1)}
-                disabled={i === services.length - 1}
-                style={{
-                  width: "28px", height: "28px", border: "1px solid #dde3ec",
-                  borderRadius: "6px", background: i === services.length - 1 ? "#f8fafd" : "#f0f4f8",
-                  color: i === services.length - 1 ? "#d0d8e4" : "#6b7c93",
-                  cursor: i === services.length - 1 ? "default" : "pointer",
-                  fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: "700", lineHeight: 1,
-                }}
-              >↓</button>
+              <button onClick={() => moveItem(i, -1)} disabled={i === 0}
+                style={{ width: "28px", height: "28px", border: "1px solid #dde3ec", borderRadius: "6px", background: i === 0 ? "#f8fafd" : "#f0f4f8", color: i === 0 ? "#d0d8e4" : "#6b7c93", cursor: i === 0 ? "default" : "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", lineHeight: 1 }}>↑</button>
+              <button onClick={() => moveItem(i, 1)} disabled={i === services.length - 1}
+                style={{ width: "28px", height: "28px", border: "1px solid #dde3ec", borderRadius: "6px", background: i === services.length - 1 ? "#f8fafd" : "#f0f4f8", color: i === services.length - 1 ? "#d0d8e4" : "#6b7c93", cursor: i === services.length - 1 ? "default" : "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", lineHeight: 1 }}>↓</button>
             </div>
             <div style={{ width: "32px", height: "32px", borderRadius: "7px", background: sv.color, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: "700", fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sv.name}</div>
               <div style={{ fontSize: "0.75rem", color: "#8896aa" }}>{sv.duration}分 ／ ¥{sv.price.toLocaleString()}</div>
             </div>
-            <button
-              style={{ ...mkBtn("ghost"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }}
-              onClick={() => setEditing({ ...sv })}
-            >編集</button>
-            <button
-              style={{ ...mkBtn("danger"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }}
-              onClick={() => deleteService(sv.id)}
-            >削除</button>
+            <button style={{ ...mkBtn("ghost"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }} onClick={() => setEditing({ ...sv })}>編集</button>
+            <button style={{ ...mkBtn("danger"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }} onClick={() => deleteService(sv.id)}>削除</button>
           </div>
         ))}
         {services.length === 0 && (
@@ -1289,7 +1266,6 @@ export default function App() {
       `}</style>
 
       <div style={{ minHeight: "100vh", background: "#f4f7fb", paddingBottom: "70px" }}>
-        {/* Header */}
         <header style={{ background: "#fff", borderBottom: "1px solid #e4eaf4", padding: "0 1rem", display: "flex", alignItems: "center", height: "52px", gap: "0.75rem", boxShadow: "0 1px 6px rgba(80,100,140,0.07)", position: "sticky", top: 0, zIndex: 100 }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", color: "#3d5a80", fontWeight: "700", whiteSpace: "nowrap" }}>✂ 予約管理（サンプル用）</div>
           <div style={{ flex: 1 }} />
@@ -1303,7 +1279,6 @@ export default function App() {
           </button>
         </header>
 
-        {/* Settings dropdown */}
         {showMenu && (
           <div style={{ position: "fixed", top: "52px", right: "0.75rem", background: "#fff", border: "1px solid #e4eaf4", borderRadius: "12px", boxShadow: "0 8px 24px rgba(80,100,140,0.15)", zIndex: 200, minWidth: "160px", overflow: "hidden" }}>
             <button onClick={() => { setShowChangePw(true); setShowMenu(false); }}
@@ -1314,7 +1289,6 @@ export default function App() {
         )}
         {showMenu && <div style={{ position: "fixed", inset: 0, zIndex: 150 }} onClick={() => setShowMenu(false)} />}
 
-        {/* Main content */}
         <main style={{ padding: "1rem", maxWidth: "800px", margin: "0 auto" }}>
           {loading ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", color: "#8896aa" }}>読み込み中…</div>
@@ -1330,7 +1304,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* Bottom navigation */}
       <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e4eaf4", display: "flex", zIndex: 100, boxShadow: "0 -2px 12px rgba(80,100,140,0.08)" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
