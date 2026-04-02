@@ -271,7 +271,7 @@ const END_HOUR = 21;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
 // ★ 変更①：時間ラベル列の幅を56pxに拡大
-const TIME_COL_WIDTH = 56;
+const TIME_COL_WIDTH = 64;
 
 function timeToY(timeStr) {
   const [h, m] = timeStr.split(":").map(Number);
@@ -527,7 +527,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         <div style={{ borderRadius: "12px", border: "1px solid #e4eaf4", background: "#fff", overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             {/* ヘッダー行 */}
-            <div style={{ display: "flex", borderBottom: "2px solid #e4eaf4", background: "#f8fafd", minWidth: "782px" }}>
+            <div style={{ display: "flex", borderBottom: "2px solid #e4eaf4", background: "#f8fafd", minWidth: "790px" }}>
               <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0 }} />
               {days.map(d => {
                 const isToday = fmt(d) === fmt(today);
@@ -542,13 +542,13 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
               })}
             </div>
             {/* 時間軸本体 */}
-            <div style={{ display: "flex", minWidth: "782px" }}>
+            <div style={{ display: "flex", minWidth: "790px" }}>
               {/* ★ 時間ラベル列：幅56px・フォント0.85rem */}
               <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0, position: "relative", height: `${TOTAL_HOURS * PX_PER_HOUR}px`, background: "#fafbfe" }}>
                 {hourLabels.map(h => (
                   <div key={h} style={{
                     position: "absolute", top: `${(h - START_HOUR) * PX_PER_HOUR - 8}px`,
-                    right: "6px", fontSize: "0.85rem", color: "#8896aa", userSelect: "none", fontWeight: "500",
+                    right: "6px", fontSize: "0.95rem", color: "#8896aa", userSelect: "none", fontWeight: "500",
                   }}>
                     {`${String(h).padStart(2, "0")}:00`}
                   </div>
@@ -660,7 +660,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
               {hourLabels.map(h => (
                 <div key={h} style={{
                   position: "absolute", top: `${(h - START_HOUR) * PX_PER_HOUR - 8}px`,
-                  right: "6px", fontSize: "0.85rem", color: "#8896aa", userSelect: "none", fontWeight: "500",
+                  right: "6px", fontSize: "0.95rem", color: "#8896aa", userSelect: "none", fontWeight: "500",
                 }}>
                   {`${String(h).padStart(2, "0")}:00`}
                 </div>
@@ -752,6 +752,22 @@ function CustomersTab({ customers, setCustomers, bookings, services }) {
           </div>
         ))}
       </div>
+      {(selected.phone || selected.email) && (
+        <div style={{ background: "#f8fafd", border: "1px solid #e4eaf4", borderRadius: "8px", padding: "0.7rem", marginBottom: "1rem", fontSize: "0.85rem", color: "#2d3748", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          {selected.phone && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.95rem" }}>📞</span>
+              <a href={`tel:${selected.phone}`} style={{ color: "#4a8fd4", fontWeight: "600", textDecoration: "none" }}>{selected.phone}</a>
+            </div>
+          )}
+          {selected.email && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.95rem" }}>✉️</span>
+              <a href={`mailto:${selected.email}`} style={{ color: "#4a8fd4", fontWeight: "600", textDecoration: "none" }}>{selected.email}</a>
+            </div>
+          )}
+        </div>
+      )}
       {selected.notes && (
         <div style={{ background: "#fffbf0", border: "1px solid #f0e6c8", borderRadius: "8px", padding: "0.7rem", marginBottom: "1rem", fontSize: "0.83rem", color: "#5a4a2a" }}>
           📝 {selected.notes}
