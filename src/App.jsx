@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
@@ -918,7 +918,7 @@ function SalesTab({ bookings, services, staff, customers }) {
 }
 
 // ============================================================
-// MENU MANAGEMENT — ★ ドラッグ＆ドロップ対応
+// MENU MANAGEMENT — ★ ↑↓ボタンで並び替え（スマホ対応）
 // ============================================================
 const COLOR_PRESETS = ["#fde8b0","#c8e6fb","#ffd6d6","#e8d5f5","#d5f0e8","#ffe5c8","#d5eaf5","#f5d5e8","#e8f5d5","#f5e8d5","#dff5f5","#f5dfd5"];
 
@@ -926,8 +926,6 @@ function MenuManagementTab({ services, setServices }) {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [orderDirty, setOrderDirty] = useState(false);
-  const [dragIdx, setDragIdx] = useState(null);
-  const [dragOverIdx, setDragOverIdx] = useState(null);
 
   const emptyService = () => ({ id: "sv_" + Math.random().toString(36).slice(2, 9), name: "", duration: 30, price: 0, color: "#fde8b0" });
 
@@ -960,33 +958,17 @@ function MenuManagementTab({ services, setServices }) {
     } catch (e) { alert(e.message); }
   };
 
-  const setEdit = (k, v) => setEditing(e => ({ ...e, [k]: v }));
-
-  // ドラッグ処理
-  const handleDragStart = (e, i) => {
-    setDragIdx(i);
-    e.dataTransfer.effectAllowed = "move";
-  };
-  const handleDragOver = (e, i) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverIdx(i);
-  };
-  const handleDrop = (e, i) => {
-    e.preventDefault();
-    if (dragIdx === null || dragIdx === i) return;
+  // ↑↓ 移動
+  const moveItem = (i, dir) => {
     const next = [...services];
-    const [moved] = next.splice(dragIdx, 1);
-    next.splice(i, 0, moved);
+    const target = i + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[i], next[target]] = [next[target], next[i]];
     setServices(next);
     setOrderDirty(true);
-    setDragIdx(null);
-    setDragOverIdx(null);
   };
-  const handleDragEnd = () => {
-    setDragIdx(null);
-    setDragOverIdx(null);
-  };
+
+  const setEdit = (k, v) => setEditing(e => ({ ...e, [k]: v }));
 
   if (editing) return (
     <div style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1.25rem" }}>
@@ -1049,47 +1031,59 @@ function MenuManagementTab({ services, setServices }) {
           <button style={mkBtn("primary")} onClick={() => setEditing(emptyService())}>＋ 追加</button>
         </div>
       </div>
-      <div style={{ color: "#a0aec0", fontSize: "0.72rem", marginBottom: "0.6rem", display: "flex", alignItems: "center", gap: "4px" }}>
-        <span>☰</span><span>ドラッグして順番を変えられます</span>
-      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {services.map((sv, i) => (
           <div
             key={sv.id}
-            draggable
-            onDragStart={e => handleDragStart(e, i)}
-            onDragOver={e => handleDragOver(e, i)}
-            onDrop={e => handleDrop(e, i)}
-            onDragEnd={handleDragEnd}
             style={{
-              background: dragIdx === i ? "#f0f4f8" : "#fff",
-              border: dragOverIdx === i && dragIdx !== i ? "2px dashed #6b9fd4" : "1.5px solid #e4eaf4",
+              background: "#fff",
+              border: "1.5px solid #e4eaf4",
               borderRadius: "12px",
-              padding: "0.85rem 1rem",
+              padding: "0.75rem 0.75rem",
               display: "flex",
               alignItems: "center",
-              gap: "0.75rem",
-              opacity: dragIdx === i ? 0.45 : 1,
-              transition: "opacity 0.15s, border 0.1s",
-              userSelect: "none",
+              gap: "0.6rem",
             }}
           >
-            {/* ドラッグハンドル */}
-            <span style={{ color: "#c8d4e3", fontSize: "1.2rem", cursor: "grab", flexShrink: 0, lineHeight: 1 }}>☰</span>
+            {/* ↑↓ ボタン */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }}>
+              <button
+                onClick={() => moveItem(i, -1)}
+                disabled={i === 0}
+                style={{
+                  width: "28px", height: "28px", border: "1px solid #dde3ec",
+                  borderRadius: "6px", background: i === 0 ? "#f8fafd" : "#f0f4f8",
+                  color: i === 0 ? "#d0d8e4" : "#6b7c93",
+                  cursor: i === 0 ? "default" : "pointer",
+                  fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: "700", lineHeight: 1,
+                }}
+              >↑</button>
+              <button
+                onClick={() => moveItem(i, 1)}
+                disabled={i === services.length - 1}
+                style={{
+                  width: "28px", height: "28px", border: "1px solid #dde3ec",
+                  borderRadius: "6px", background: i === services.length - 1 ? "#f8fafd" : "#f0f4f8",
+                  color: i === services.length - 1 ? "#d0d8e4" : "#6b7c93",
+                  cursor: i === services.length - 1 ? "default" : "pointer",
+                  fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: "700", lineHeight: 1,
+                }}
+              >↓</button>
+            </div>
             <div style={{ width: "32px", height: "32px", borderRadius: "7px", background: sv.color, flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: "700", fontSize: "0.92rem" }}>{sv.name}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: "700", fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sv.name}</div>
               <div style={{ fontSize: "0.75rem", color: "#8896aa" }}>{sv.duration}分 ／ ¥{sv.price.toLocaleString()}</div>
             </div>
             <button
-              style={{ ...mkBtn("ghost"), padding: "0.4rem 0.75rem", fontSize: "0.82rem" }}
-              onMouseDown={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); setEditing({ ...sv }); }}
+              style={{ ...mkBtn("ghost"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }}
+              onClick={() => setEditing({ ...sv })}
             >編集</button>
             <button
-              style={{ ...mkBtn("danger"), padding: "0.4rem 0.75rem", fontSize: "0.82rem" }}
-              onMouseDown={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); deleteService(sv.id); }}
+              style={{ ...mkBtn("danger"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }}
+              onClick={() => deleteService(sv.id)}
             >削除</button>
           </div>
         ))}
