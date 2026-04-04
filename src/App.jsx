@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
@@ -83,7 +83,7 @@ function LoginScreen({ onLogin }) {
     <div style={{ minHeight: "100vh", background: "#f4f7fb", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
       <div style={{ background: "#fff", borderRadius: "16px", padding: "2.5rem 2rem", width: "100%", maxWidth: "360px", boxShadow: "0 8px 32px rgba(80,100,140,0.12)", textAlign: "center" }}>
         <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>✂</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "#3d5a80", marginBottom: "0.3rem" }}>予約管理システム（サンプル用）</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "#3d5a80", marginBottom: "0.3rem" }}>理容管理システム</h1>
         <p style={{ color: "#8896aa", fontSize: "0.83rem", marginBottom: "2rem" }}>パスワードを入力してください</p>
         <input type="password" style={{ ...inp, textAlign: "center", fontSize: "1.1rem", letterSpacing: "0.15em", marginBottom: "1rem" }}
           placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
@@ -269,6 +269,8 @@ const PX_PER_HOUR = 60;
 const START_HOUR = 9;
 const END_HOUR = 21;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
+
+// ★ 変更①：時間ラベル列の幅を56pxに拡大
 const TIME_COL_WIDTH = 64;
 
 function timeToY(timeStr) {
@@ -337,6 +339,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
 
   const hourLabels = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => i + START_HOUR);
 
+  // 日ビュー：スタッフ列ごとに予約チップを絶対配置
   const DayViewColumn = ({ staffMember }) => {
     const dayBookings = bookingsOn(fmt(currentDate)).filter(b => b.staffId === staffMember.id);
     const totalH = TOTAL_HOURS * PX_PER_HOUR;
@@ -411,6 +414,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
 
   return (
     <div>
+      {/* Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: "0.25rem" }}>
           {["day","week","month"].map(v => (
@@ -445,6 +449,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         <button onClick={() => setModal({ booking: null })} style={{ ...mkBtn("primary"), marginLeft: "auto", padding: "0.45rem 1rem", fontSize: "0.88rem" }}>＋ 予約</button>
       </div>
 
+      {/* Month View */}
       {view === "month" && (() => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -517,9 +522,11 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         );
       })()}
 
+      {/* ★ Week View — 時間ラベル幅を TIME_COL_WIDTH(56px) に変更 */}
       {view === "week" && (
         <div style={{ borderRadius: "12px", border: "1px solid #e4eaf4", background: "#fff", overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
+            {/* ヘッダー行 */}
             <div style={{ display: "flex", borderBottom: "2px solid #e4eaf4", background: "#f8fafd", minWidth: "790px" }}>
               <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0 }} />
               {days.map(d => {
@@ -534,7 +541,9 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
                 );
               })}
             </div>
+            {/* 時間軸本体 */}
             <div style={{ display: "flex", minWidth: "790px" }}>
+              {/* ★ 時間ラベル列：幅56px・フォント0.85rem */}
               <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0, position: "relative", height: `${TOTAL_HOURS * PX_PER_HOUR}px`, background: "#fafbfe" }}>
                 {hourLabels.map(h => (
                   <div key={h} style={{
@@ -545,6 +554,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
                   </div>
                 ))}
               </div>
+              {/* 曜日ごとの列 */}
               {days.map(d => {
                 const isToday = fmt(d) === fmt(today);
                 const dayBks = bookingsOn(fmt(d));
@@ -630,8 +640,10 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
         </div>
       )}
 
+      {/* ★ Day View — 時間ラベル幅を TIME_COL_WIDTH(56px) に変更 */}
       {view === "day" && (
         <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid #e4eaf4", background: "#fff" }}>
+          {/* ヘッダー行（スタッフ名） */}
           <div style={{ display: "flex", borderBottom: "2px solid #e4eaf4", background: "#f8fafd", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0 }} />
             {staff.map(s => (
@@ -641,7 +653,9 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
               </div>
             ))}
           </div>
+          {/* 時間軸グリッド本体 */}
           <div style={{ display: "flex" }}>
+            {/* ★ 時間ラベル列：幅56px・フォント0.85rem */}
             <div style={{ width: `${TIME_COL_WIDTH}px`, flexShrink: 0, position: "relative", height: `${TOTAL_HOURS * PX_PER_HOUR}px`, background: "#fafbfe" }}>
               {hourLabels.map(h => (
                 <div key={h} style={{
@@ -652,6 +666,7 @@ function CalendarTab({ bookings, setBookings, customers, services, staff }) {
                 </div>
               ))}
             </div>
+            {/* スタッフごとの列 */}
             {staff.map(s => (
               <div key={s.id} style={{ flex: 1, minWidth: "110px" }}>
                 <DayViewColumn staffMember={s} />
@@ -741,13 +756,13 @@ function CustomersTab({ customers, setCustomers, bookings, services }) {
         <div style={{ background: "#f8fafd", border: "1px solid #e4eaf4", borderRadius: "8px", padding: "0.7rem", marginBottom: "1rem", fontSize: "0.85rem", color: "#2d3748", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
           {selected.phone && (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "0.95rem" }}>📞</span>
+              <span style={{ fontSize: "0.72rem", color: "#8896aa", fontWeight: "700", width: "52px", flexShrink: 0 }}>電話</span>
               <a href={`tel:${selected.phone}`} style={{ color: "#4a8fd4", fontWeight: "600", textDecoration: "none" }}>{selected.phone}</a>
             </div>
           )}
           {selected.email && (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "0.95rem" }}>✉️</span>
+              <span style={{ fontSize: "0.72rem", color: "#8896aa", fontWeight: "700", width: "52px", flexShrink: 0 }}>メール</span>
               <a href={`mailto:${selected.email}`} style={{ color: "#4a8fd4", fontWeight: "600", textDecoration: "none" }}>{selected.email}</a>
             </div>
           )}
@@ -819,51 +834,141 @@ function CustomersTab({ customers, setCustomers, bookings, services }) {
 }
 
 // ============================================================
-// SALES TAB  ★ 今日の売上・今週の売上を追加
+// SALES TAB
 // ============================================================
-function SalesTab({ bookings, services, staff, customers }) {
+function SalesTab({ bookings, setBookings, services, staff, customers, setCustomers }) {
   const [selectedMonth, setSelectedMonth] = useState(
     `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`
   );
 
-  const downloadCSV = (rows, filename) => {
-    const esc = (v) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const lines = rows.map(r => r.map(esc).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + lines], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
+  // ---------- インポート状態 ----------
+  const [importPreview, setImportPreview] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState(null);
+  const bookingFileRef = useRef(null);
+  const customerFileRef = useRef(null);
+
+  // CSVテキスト → 行の配列（ヘッダー除く）
+  const parseCSV = (text) => {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    const parseLine = (line) => {
+      const out = []; let cur = ""; let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (inQ) {
+          if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+          else if (c === '"') { inQ = false; }
+          else { cur += c; }
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { out.push(cur); cur = ""; }
+          else { cur += c; }
+        }
+      }
+      out.push(cur);
+      return out;
+    };
+    return lines.slice(1).filter(l => l.trim()).map(parseLine);
   };
 
-  const downloadBookings = () => {
-    const header = ["日付", "時間", "顧客名", "担当スタッフ", "メニュー", "料金", "ステータス", "メモ"];
-    const rows = bookings.map(b => {
-      const sv = services.find(s => s.id === b.serviceId);
-      const st = staff.find(s => s.id === b.staffId);
-      return [b.date, b.time, b.customerName || "", st?.name || "", sv?.name || "", b.price, b.status, b.notes || ""];
-    });
-    downloadCSV([header, ...rows], `予約データ_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}.csv`);
+  const readFile = (file) => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result);
+    reader.onerror = rej;
+    reader.readAsText(file, "UTF-8");
+  });
+
+  // 予約CSVプレビュー（ヘッダー: 日付,時間,顧客名,担当スタッフ,メニュー,料金,ステータス,メモ）
+  const handleBookingFile = async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setImportMsg(null);
+    try {
+      const text = await readFile(file);
+      const rows = parseCSV(text);
+      let added = 0, skipped = 0;
+      const preview = rows.map(r => {
+        const [date, time, customerName, staffName, serviceName, price, status, notes] = r;
+        const staffObj = staff.find(s => s.name === staffName?.trim());
+        const serviceObj = services.find(s => s.name === serviceName?.trim());
+        const dup = bookings.some(b =>
+          b.date === date?.trim() && b.time === time?.trim() && b.customerName === customerName?.trim()
+        );
+        if (dup) { skipped++; return null; }
+        added++;
+        return {
+          id: genId(),
+          date: date?.trim() || "",
+          time: time?.trim() || "",
+          customerName: customerName?.trim() || "",
+          customerId: "",
+          staffId: staffObj?.id || "",
+          serviceId: serviceObj?.id || "",
+          price: parseInt(price) || 0,
+          status: status?.trim() || "confirmed",
+          notes: notes?.trim() || "",
+          slot: 0,
+        };
+      }).filter(Boolean);
+      setImportPreview({ type: "bookings", rows: preview, added, skipped });
+    } catch (err) { setImportMsg({ ok: false, text: "ファイルの読み込みに失敗しました" }); }
+    e.target.value = "";
   };
 
-  const downloadCustomers = () => {
-    const header = ["氏名", "電話番号", "メールアドレス", "来店回数", "最終来店", "累計金額", "メモ"];
-    const rows = (customers || []).map(c => [c.name, c.phone || "", c.email || "", c.visits || 0, c.lastVisit || "", c.totalSpent || 0, c.notes || ""]);
-    downloadCSV([header, ...rows], `顧客データ_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}.csv`);
+  // 顧客CSVプレビュー（ヘッダー: 氏名,電話番号,メールアドレス,来店回数,最終来店,累計金額,メモ）
+  const handleCustomerFile = async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setImportMsg(null);
+    try {
+      const text = await readFile(file);
+      const rows = parseCSV(text);
+      let added = 0, skipped = 0;
+      const preview = rows.map(r => {
+        const [name, phone, email, visits, lastVisit, totalSpent, notes] = r;
+        const dup = customers.some(c => c.name === name?.trim() && c.phone === phone?.trim());
+        if (dup) { skipped++; return null; }
+        added++;
+        return {
+          id: genId(),
+          name: name?.trim() || "",
+          phone: phone?.trim() || "",
+          email: email?.trim() || "",
+          visits: parseInt(visits) || 0,
+          lastVisit: lastVisit?.trim() || "",
+          totalSpent: parseInt(totalSpent) || 0,
+          notes: notes?.trim() || "",
+        };
+      }).filter(Boolean);
+      setImportPreview({ type: "customers", rows: preview, added, skipped });
+    } catch (err) { setImportMsg({ ok: false, text: "ファイルの読み込みに失敗しました" }); }
+    e.target.value = "";
+  };
+
+  // インポート実行
+  const execImport = async () => {
+    if (!importPreview || importPreview.rows.length === 0) return;
+    setImporting(true);
+    try {
+      if (importPreview.type === "bookings") {
+        for (const b of importPreview.rows) {
+          await apiFetch("/api/bookings", { method: "POST", body: b });
+        }
+        setBookings(prev => [...prev, ...importPreview.rows]);
+        setImportMsg({ ok: true, text: `✅ ${importPreview.rows.length}件の予約をインポートしました` });
+      } else {
+        for (const c of importPreview.rows) {
+          await apiFetch("/api/customers", { method: "POST", body: c });
+        }
+        setCustomers(prev => [...prev, ...importPreview.rows]);
+        setImportMsg({ ok: true, text: `✅ ${importPreview.rows.length}件の顧客をインポートしました` });
+      }
+      setImportPreview(null);
+    } catch (err) {
+      setImportMsg({ ok: false, text: "インポート中にエラーが発生しました: " + err.message });
+    }
+    setImporting(false);
   };
 
   const active = bookings.filter(b => b.status !== "cancelled");
-
-  // ★ 今日・今週の計算
-  const todayStr = fmt(today);
-  const weekStartDate = new Date(today);
-  weekStartDate.setDate(today.getDate() - today.getDay());
-  const weekStartStr = fmt(weekStartDate);
-  const todaySales = active.filter(b => b.date === todayStr).reduce((a, b) => a + b.price, 0);
-  const todayCount = active.filter(b => b.date === todayStr).length;
-  const weeklySales = active.filter(b => b.date >= weekStartStr && b.date <= todayStr).reduce((a, b) => a + b.price, 0);
-  const weeklyCount = active.filter(b => b.date >= weekStartStr && b.date <= todayStr).length;
-
   const monthly = {};
   active.forEach(b => { const m = b.date.slice(0, 7); monthly[m] = (monthly[m] || 0) + b.price; });
   const monthKeys = Object.keys(monthly).sort();
@@ -888,46 +993,89 @@ function SalesTab({ bookings, services, staff, customers }) {
 
   return (
     <div>
-      {/* ★ 今日・今週カード */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
-        {[
-          ["🌅 今日の売上", `¥${todaySales.toLocaleString()}`, `${todayCount}件`, "#e07b7b"],
-          ["📅 今週の売上", `¥${weeklySales.toLocaleString()}`, `${weeklyCount}件`, "#e09b4a"],
-        ].map(([k, v, sub, c]) => (
-          <div key={k} style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1rem 0.75rem" }}>
-            <div style={{ color: "#8896aa", fontSize: "0.65rem", textTransform: "uppercase", fontWeight: "600", marginBottom: "0.2rem" }}>{k}</div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", color: c, marginTop: "0.1rem" }}>{v}</div>
-            <div style={{ color: "#a0aec0", fontSize: "0.7rem", marginTop: "0.2rem" }}>{sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* 今月・件数・客単価カード */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.75rem", marginBottom: "1.25rem" }}>
-        {[
-          ["今月売上", `¥${totalThisMonth.toLocaleString()}`, null, "#4a8fd4"],
-          ["予約件数", `${bookingsThisMonth}件`, null, "#3d5a80"],
-          ["客単価", `¥${bookingsThisMonth > 0 ? Math.round(totalThisMonth / bookingsThisMonth).toLocaleString() : 0}`, null, "#6bbf8f"],
-        ].map(([k, v, sub, c]) => (
+        {[["今月売上",`¥${totalThisMonth.toLocaleString()}`,"#4a8fd4"],["予約件数",`${bookingsThisMonth}件`,"#3d5a80"],["客単価",`¥${bookingsThisMonth > 0 ? Math.round(totalThisMonth / bookingsThisMonth).toLocaleString() : 0}`,"#6bbf8f"]].map(([k,v,c]) => (
           <div key={k} style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1rem 0.75rem" }}>
             <div style={{ color: "#8896aa", fontSize: "0.65rem", textTransform: "uppercase", fontWeight: "600" }}>{k}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", color: c, marginTop: "0.2rem" }}>{v}</div>
           </div>
         ))}
       </div>
-
+      {/* ★ インポートセクション */}
       <div style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "1rem", marginBottom: "1rem" }}>
-        <div style={{ color: "#8896aa", fontSize: "0.7rem", fontWeight: "600", marginBottom: "0.6rem" }}>💾 データのバックアップ</div>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button onClick={downloadBookings} style={{ ...mkBtn("primary"), fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
-            📅 予約データをCSVで保存
+        <div style={{ color: "#8896aa", fontSize: "0.7rem", fontWeight: "600", marginBottom: "0.6rem" }}>📥 CSVからインポート</div>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+          {/* hidden file inputs */}
+          <input ref={bookingFileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleBookingFile} />
+          <input ref={customerFileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCustomerFile} />
+          <button onClick={() => { setImportPreview(null); setImportMsg(null); bookingFileRef.current?.click(); }}
+            style={{ ...mkBtn("ghost"), fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
+            📅 予約CSVを読み込む
           </button>
-          <button onClick={downloadCustomers} style={{ ...mkBtn("ghost"), fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
-            👤 顧客データをCSVで保存
+          <button onClick={() => { setImportPreview(null); setImportMsg(null); customerFileRef.current?.click(); }}
+            style={{ ...mkBtn("ghost"), fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
+            👤 顧客CSVを読み込む
           </button>
         </div>
-        <div style={{ color: "#a0aec0", fontSize: "0.72rem", marginTop: "0.5rem" }}>月1回ダウンロードして保存しておくと安心です</div>
+        <div style={{ color: "#a0aec0", fontSize: "0.72rem", marginBottom: "0.5rem" }}>
+          このシステムでバックアップしたCSVをそのまま読み込めます。重複データは自動でスキップします。
+        </div>
+
+        {/* プレビュー */}
+        {importPreview && (
+          <div style={{ marginTop: "0.75rem", border: "1px solid #dde3ec", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "0.65rem 1rem", background: "#f4f8ff", borderBottom: "1px solid #dde3ec", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div style={{ fontSize: "0.83rem", color: "#3d5a80", fontWeight: "700" }}>
+                {importPreview.type === "bookings" ? "📅 予約データ" : "👤 顧客データ"}　プレビュー
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.78rem" }}>
+                <span style={{ color: "#6bbf8f", fontWeight: "700" }}>追加 {importPreview.added}件</span>
+                <span style={{ color: "#f87171", fontWeight: "700" }}>スキップ {importPreview.skipped}件</span>
+              </div>
+            </div>
+            <div style={{ maxHeight: "180px", overflowY: "auto" }}>
+              {importPreview.rows.length === 0 ? (
+                <div style={{ padding: "1rem", color: "#a0aec0", fontSize: "0.83rem", textAlign: "center" }}>
+                  新規データがありません（すべて重複）
+                </div>
+              ) : importPreview.type === "bookings" ? (
+                importPreview.rows.map((b, i) => (
+                  <div key={i} style={{ padding: "0.5rem 1rem", borderBottom: "1px solid #f0f4f8", fontSize: "0.8rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                    <span style={{ color: "#8896aa", flexShrink: 0 }}>{b.date} {b.time}</span>
+                    <span style={{ fontWeight: "600", color: "#2d3748" }}>{b.customerName || "—"}</span>
+                    <span style={{ color: "#8896aa" }}>¥{b.price.toLocaleString()}</span>
+                  </div>
+                ))
+              ) : (
+                importPreview.rows.map((c, i) => (
+                  <div key={i} style={{ padding: "0.5rem 1rem", borderBottom: "1px solid #f0f4f8", fontSize: "0.8rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                    <span style={{ fontWeight: "600", color: "#2d3748" }}>{c.name}</span>
+                    <span style={{ color: "#8896aa" }}>{c.phone || "—"}</span>
+                    <span style={{ color: "#8896aa" }}>来店{c.visits}回</span>
+                  </div>
+                ))
+              )}
+            </div>
+            {importPreview.rows.length > 0 && (
+              <div style={{ padding: "0.65rem 1rem", background: "#fafbfe", borderTop: "1px solid #dde3ec", display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                <button onClick={() => setImportPreview(null)} style={{ ...mkBtn("ghost"), fontSize: "0.83rem", padding: "0.45rem 0.9rem" }}>キャンセル</button>
+                <button onClick={execImport} disabled={importing}
+                  style={{ ...mkBtn("primary"), fontSize: "0.83rem", padding: "0.45rem 0.9rem", opacity: importing ? 0.7 : 1 }}>
+                  {importing ? "インポート中…" : `${importPreview.rows.length}件をインポート`}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 結果メッセージ */}
+        {importMsg && (
+          <div style={{ marginTop: "0.6rem", fontSize: "0.83rem", color: importMsg.ok ? "#4a9d6f" : "#f87171", fontWeight: "600" }}>
+            {importMsg.text}
+          </div>
+        )}
       </div>
+
       <div style={{ marginBottom: "1rem" }}>
         <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ ...inp, width: "auto" }} />
       </div>
@@ -950,7 +1098,7 @@ function SalesTab({ bookings, services, staff, customers }) {
 }
 
 // ============================================================
-// MENU MANAGEMENT
+// MENU MANAGEMENT — ★ ↑↓ボタンで並び替え（スマホ対応）
 // ============================================================
 const COLOR_PRESETS = ["#fde8b0","#c8e6fb","#ffd6d6","#e8d5f5","#d5f0e8","#ffe5c8","#d5eaf5","#f5d5e8","#e8f5d5","#f5e8d5","#dff5f5","#f5dfd5"];
 
@@ -990,6 +1138,7 @@ function MenuManagementTab({ services, setServices }) {
     } catch (e) { alert(e.message); }
   };
 
+  // ↑↓ 移動
   const moveItem = (i, dir) => {
     const next = [...services];
     const target = i + dir;
@@ -1064,20 +1213,58 @@ function MenuManagementTab({ services, setServices }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {services.map((sv, i) => (
-          <div key={sv.id} style={{ background: "#fff", border: "1.5px solid #e4eaf4", borderRadius: "12px", padding: "0.75rem 0.75rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <div
+            key={sv.id}
+            style={{
+              background: "#fff",
+              border: "1.5px solid #e4eaf4",
+              borderRadius: "12px",
+              padding: "0.75rem 0.75rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
+            }}
+          >
+            {/* ↑↓ ボタン */}
             <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }}>
-              <button onClick={() => moveItem(i, -1)} disabled={i === 0}
-                style={{ width: "28px", height: "28px", border: "1px solid #dde3ec", borderRadius: "6px", background: i === 0 ? "#f8fafd" : "#f0f4f8", color: i === 0 ? "#d0d8e4" : "#6b7c93", cursor: i === 0 ? "default" : "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", lineHeight: 1 }}>↑</button>
-              <button onClick={() => moveItem(i, 1)} disabled={i === services.length - 1}
-                style={{ width: "28px", height: "28px", border: "1px solid #dde3ec", borderRadius: "6px", background: i === services.length - 1 ? "#f8fafd" : "#f0f4f8", color: i === services.length - 1 ? "#d0d8e4" : "#6b7c93", cursor: i === services.length - 1 ? "default" : "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", lineHeight: 1 }}>↓</button>
+              <button
+                onClick={() => moveItem(i, -1)}
+                disabled={i === 0}
+                style={{
+                  width: "28px", height: "28px", border: "1px solid #dde3ec",
+                  borderRadius: "6px", background: i === 0 ? "#f8fafd" : "#f0f4f8",
+                  color: i === 0 ? "#d0d8e4" : "#6b7c93",
+                  cursor: i === 0 ? "default" : "pointer",
+                  fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: "700", lineHeight: 1,
+                }}
+              >↑</button>
+              <button
+                onClick={() => moveItem(i, 1)}
+                disabled={i === services.length - 1}
+                style={{
+                  width: "28px", height: "28px", border: "1px solid #dde3ec",
+                  borderRadius: "6px", background: i === services.length - 1 ? "#f8fafd" : "#f0f4f8",
+                  color: i === services.length - 1 ? "#d0d8e4" : "#6b7c93",
+                  cursor: i === services.length - 1 ? "default" : "pointer",
+                  fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: "700", lineHeight: 1,
+                }}
+              >↓</button>
             </div>
             <div style={{ width: "32px", height: "32px", borderRadius: "7px", background: sv.color, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: "700", fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sv.name}</div>
               <div style={{ fontSize: "0.75rem", color: "#8896aa" }}>{sv.duration}分 ／ ¥{sv.price.toLocaleString()}</div>
             </div>
-            <button style={{ ...mkBtn("ghost"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }} onClick={() => setEditing({ ...sv })}>編集</button>
-            <button style={{ ...mkBtn("danger"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }} onClick={() => deleteService(sv.id)}>削除</button>
+            <button
+              style={{ ...mkBtn("ghost"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }}
+              onClick={() => setEditing({ ...sv })}
+            >編集</button>
+            <button
+              style={{ ...mkBtn("danger"), padding: "0.4rem 0.6rem", fontSize: "0.82rem", flexShrink: 0 }}
+              onClick={() => deleteService(sv.id)}
+            >削除</button>
           </div>
         ))}
         {services.length === 0 && (
@@ -1243,9 +1430,117 @@ export default function App() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { if (loggedIn) loadData(); }, [loggedIn]);
+  // ★ 自動完了処理：過去日付でconfirmed/pendingのままの予約を自動でdoneにし、顧客情報を更新
+  const autoComplete = useCallback(async (currentBookings, currentCustomers) => {
+    const todayStr = fmt(new Date());
+    // 対象：今日より前の日付 かつ confirmed or pending
+    const targets = currentBookings.filter(b =>
+      b.date < todayStr && (b.status === "confirmed" || b.status === "pending")
+    );
+    if (targets.length === 0) return;
+
+    // 予約をdoneに更新
+    const updatedBookings = currentBookings.map(b =>
+      targets.find(t => t.id === b.id) ? { ...b, status: "done" } : b
+    );
+
+    // 顧客ごとに来店回数・最終来店・累計金額を集計して更新
+    const customerUpdates = {};
+    targets.forEach(b => {
+      if (!b.customerId) return; // 顧客紐付けなしはスキップ
+      if (!customerUpdates[b.customerId]) customerUpdates[b.customerId] = { visits: 0, lastVisit: "", totalSpent: 0 };
+      customerUpdates[b.customerId].visits += 1;
+      customerUpdates[b.customerId].totalSpent += b.price || 0;
+      if (b.date > customerUpdates[b.customerId].lastVisit) {
+        customerUpdates[b.customerId].lastVisit = b.date;
+      }
+    });
+
+    const updatedCustomers = currentCustomers.map(c => {
+      const upd = customerUpdates[c.id];
+      if (!upd) return c;
+      const newLastVisit = upd.lastVisit > (c.lastVisit || "") ? upd.lastVisit : (c.lastVisit || "");
+      return {
+        ...c,
+        visits: (c.visits || 0) + upd.visits,
+        totalSpent: (c.totalSpent || 0) + upd.totalSpent,
+        lastVisit: newLastVisit,
+      };
+    });
+
+    // APIに保存
+    try {
+      await Promise.all([
+        ...targets.map(b => apiFetch("/api/bookings", { method: "POST", body: { ...b, status: "done" } })),
+        ...Object.keys(customerUpdates).map(cid => {
+          const c = updatedCustomers.find(x => x.id === cid);
+          if (c) return apiFetch("/api/customers", { method: "POST", body: c });
+          return Promise.resolve();
+        }),
+      ]);
+      setBookings(updatedBookings);
+      setCustomers(updatedCustomers);
+    } catch (e) { console.error("自動完了処理エラー:", e); }
+  }, []);
+
+  // データ読み込み後に自動完了を実行
+  useEffect(() => {
+    if (loggedIn) loadData();
+  }, [loggedIn]);
+
+  // bookings/customersがロードされたら自動完了チェック
+  useEffect(() => {
+    if (!loading && bookings.length > 0) {
+      autoComplete(bookings, customers);
+    }
+  }, [loading]); // loadingがfalseになったタイミング（=データ取得直後）に1回だけ実行
+
+  // 日付をまたいだ時（アプリを開いたまま翌日になった場合）に再チェック
+  useEffect(() => {
+    const checkMidnight = () => {
+      const now = new Date();
+      // 翌日0時まで何msか計算してタイマーをセット
+      const msUntilMidnight =
+        new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+      return setTimeout(() => {
+        loadData().then(() => {
+          // loadData後にautoCompleteは上のuseEffectで自動発火するため不要
+        });
+      }, msUntilMidnight + 1000); // 1秒余裕を持たせる
+    };
+    if (loggedIn) {
+      const timer = checkMidnight();
+      return () => clearTimeout(timer);
+    }
+  }, [loggedIn]);
 
   const todayCount = bookings.filter(b => b.date === fmt(today) && b.status !== "cancelled").length;
+
+  // ★ バックアップ用ダウンロード関数（App rootに移動）
+  const downloadCSV = (rows, filename) => {
+    const esc = (v) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = rows.map(r => r.map(esc).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + lines], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+  const dlDate = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
+  const downloadBookings = () => {
+    const header = ["日付", "時間", "顧客名", "担当スタッフ", "メニュー", "料金", "ステータス", "メモ"];
+    const rows = bookings.map(b => {
+      const sv = services.find(s => s.id === b.serviceId);
+      const st = staff.find(s => s.id === b.staffId);
+      return [b.date, b.time, b.customerName || "", st?.name || "", sv?.name || "", b.price, b.status, b.notes || ""];
+    });
+    downloadCSV([header, ...rows], `予約データ_${dlDate}.csv`);
+  };
+  const downloadCustomers = () => {
+    const header = ["氏名", "電話番号", "メールアドレス", "来店回数", "最終来店", "累計金額", "メモ"];
+    const rows = customers.map(c => [c.name, c.phone || "", c.email || "", c.visits || 0, c.lastVisit || "", c.totalSpent || 0, c.notes || ""]);
+    downloadCSV([header, ...rows], `顧客データ_${dlDate}.csv`);
+  };
 
   if (!loggedIn) return <LoginScreen onLogin={() => setLoggedIn(true)} />;
 
@@ -1266,8 +1561,9 @@ export default function App() {
       `}</style>
 
       <div style={{ minHeight: "100vh", background: "#f4f7fb", paddingBottom: "70px" }}>
+        {/* Header */}
         <header style={{ background: "#fff", borderBottom: "1px solid #e4eaf4", padding: "0 1rem", display: "flex", alignItems: "center", height: "52px", gap: "0.75rem", boxShadow: "0 1px 6px rgba(80,100,140,0.07)", position: "sticky", top: 0, zIndex: 100 }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", color: "#3d5a80", fontWeight: "700", whiteSpace: "nowrap" }}>✂ 予約管理（サンプル用）</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", color: "#3d5a80", fontWeight: "700", whiteSpace: "nowrap" }}>✂ 理容管理</div>
           <div style={{ flex: 1 }} />
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "0.6rem", color: "#a0aec0", fontWeight: "600" }}>本日</div>
@@ -1279,16 +1575,23 @@ export default function App() {
           </button>
         </header>
 
+        {/* Settings dropdown */}
         {showMenu && (
-          <div style={{ position: "fixed", top: "52px", right: "0.75rem", background: "#fff", border: "1px solid #e4eaf4", borderRadius: "12px", boxShadow: "0 8px 24px rgba(80,100,140,0.15)", zIndex: 200, minWidth: "160px", overflow: "hidden" }}>
+          <div style={{ position: "fixed", top: "52px", right: "0.75rem", background: "#fff", border: "1px solid #e4eaf4", borderRadius: "12px", boxShadow: "0 8px 24px rgba(80,100,140,0.15)", zIndex: 200, minWidth: "200px", overflow: "hidden" }}>
             <button onClick={() => { setShowChangePw(true); setShowMenu(false); }}
               style={{ display: "block", width: "100%", padding: "0.85rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.9rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>🔑 PW変更</button>
+            <div style={{ padding: "0.5rem 1.25rem 0.3rem", fontSize: "0.65rem", color: "#a0aec0", fontWeight: "700", letterSpacing: "0.06em" }}>💾 バックアップ</div>
+            <button onClick={() => { downloadBookings(); setShowMenu(false); }}
+              style={{ display: "block", width: "100%", padding: "0.6rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.88rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>📅 予約データをCSVで保存</button>
+            <button onClick={() => { downloadCustomers(); setShowMenu(false); }}
+              style={{ display: "block", width: "100%", padding: "0.6rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.88rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>👤 顧客データをCSVで保存</button>
             <button onClick={() => { clearToken(); setLoggedIn(false); }}
               style={{ display: "block", width: "100%", padding: "0.85rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.9rem", color: "#f87171" }}>ログアウト</button>
           </div>
         )}
         {showMenu && <div style={{ position: "fixed", inset: 0, zIndex: 150 }} onClick={() => setShowMenu(false)} />}
 
+        {/* Main content */}
         <main style={{ padding: "1rem", maxWidth: "800px", margin: "0 auto" }}>
           {loading ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", color: "#8896aa" }}>読み込み中…</div>
@@ -1296,7 +1599,7 @@ export default function App() {
             <>
               {tab === "calendar" && <CalendarTab bookings={bookings} setBookings={setBookings} customers={customers} services={services} staff={staff} />}
               {tab === "customers" && <CustomersTab customers={customers} setCustomers={setCustomers} bookings={bookings} services={services} />}
-              {tab === "sales" && <SalesTab bookings={bookings} services={services} staff={staff} customers={customers} />}
+              {tab === "sales" && <SalesTab bookings={bookings} setBookings={setBookings} services={services} staff={staff} customers={customers} setCustomers={setCustomers} />}
               {tab === "menus" && <MenuManagementTab services={services} setServices={setServices} />}
               {tab === "staffs" && <StaffManagementTab staff={staff} setStaff={setStaff} />}
             </>
@@ -1304,6 +1607,7 @@ export default function App() {
         </main>
       </div>
 
+      {/* Bottom navigation */}
       <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e4eaf4", display: "flex", zIndex: 100, boxShadow: "0 -2px 12px rgba(80,100,140,0.08)" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
