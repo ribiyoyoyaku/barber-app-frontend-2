@@ -1516,7 +1516,64 @@ export default function App() {
 
   const todayCount = bookings.filter(b => b.date === fmt(today) && b.status !== "cancelled").length;
 
-  // ★ バックアップ用ダウンロード関数（App rootに移動）
+  // ★ バックアップ用ダウンロード関数（XLSX形式・期間フィルター対応）
+  const dlDate = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
+
+  const downloadXLSX = async (bookingRows, bookingHeader, customerRows, customerHeader, label) => {
+    // SheetJSを動的ロード
+    let XLSX;
+    try {
+      if (window.XLSX) {
+        XLSX = window.XLSX;
+      } else {
+        await new Promise((res, rej) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+        XLSX = window.XLSX;
+      }
+    } catch { alert("XLSXライブラリの読み込みに失敗しました"); return; }
+
+    const wb = XLSX.utils.book_new();
+
+    // 予約シート
+    const wsB = XLSX.utils.aoa_to_sheet([bookingHeader, ...bookingRows]);
+    // 列幅設定
+    wsB["!cols"] = [10,8,12,10,14,8,8,20].map(w => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, wsB, "予約データ");
+
+    // 顧客シート
+    const wsC = XLSX.utils.aoa_to_sheet([customerHeader, ...customerRows]);
+    wsC["!cols"] = [12,14,22,8,12,10,20].map(w => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, wsC, "顧客データ");
+
+    XLSX.writeFile(wb, `バックアップ_${label}_${dlDate}.xlsx`);
+  };
+
+  const getDateFrom = (days) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - days);
+    return fmt(d);
+  };
+
+  const buildAndDownload = (label, fromDate) => {
+    const bookingHeader = ["日付", "時間", "顧客名", "担当スタッフ", "メニュー", "料金", "ステータス", "メモ"];
+    const filteredBookings = fromDate
+      ? bookings.filter(b => b.date >= fromDate)
+      : bookings;
+    const bookingRows = filteredBookings.map(b => {
+      const sv = services.find(s => s.id === b.serviceId);
+      const st = staff.find(s => s.id === b.staffId);
+      return [b.date, b.time, b.customerName || "", st?.name || "", sv?.name || "", b.price, b.status, b.notes || ""];
+    });
+    const customerHeader = ["氏名", "電話番号", "メールアドレス", "来店回数", "最終来店", "累計金額", "メモ"];
+    const customerRows = customers.map(c => [c.name, c.phone || "", c.email || "", c.visits || 0, c.lastVisit || "", c.totalSpent || 0, c.notes || ""]);
+    downloadXLSX(bookingRows, bookingHeader, customerRows, customerHeader, label);
+  };
+
+  // 後方互換でCSVも残す（インポート用）
   const downloadCSV = (rows, filename) => {
     const esc = (v) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const lines = rows.map(r => r.map(esc).join(",")).join("\n");
@@ -1526,16 +1583,7 @@ export default function App() {
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   };
-  const dlDate = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
-  const downloadBookings = () => {
-    const header = ["日付", "時間", "顧客名", "担当スタッフ", "メニュー", "料金", "ステータス", "メモ"];
-    const rows = bookings.map(b => {
-      const sv = services.find(s => s.id === b.serviceId);
-      const st = staff.find(s => s.id === b.staffId);
-      return [b.date, b.time, b.customerName || "", st?.name || "", sv?.name || "", b.price, b.status, b.notes || ""];
-    });
-    downloadCSV([header, ...rows], `予約データ_${dlDate}.csv`);
-  };
+  const downloadBookings = () => buildAndDownload("全期間", null);
   const downloadCustomers = () => {
     const header = ["氏名", "電話番号", "メールアドレス", "来店回数", "最終来店", "累計金額", "メモ"];
     const rows = customers.map(c => [c.name, c.phone || "", c.email || "", c.visits || 0, c.lastVisit || "", c.totalSpent || 0, c.notes || ""]);
@@ -1577,14 +1625,21 @@ export default function App() {
 
         {/* Settings dropdown */}
         {showMenu && (
-          <div style={{ position: "fixed", top: "52px", right: "0.75rem", background: "#fff", border: "1px solid #e4eaf4", borderRadius: "12px", boxShadow: "0 8px 24px rgba(80,100,140,0.15)", zIndex: 200, minWidth: "200px", overflow: "hidden" }}>
+          <div style={{ position: "fixed", top: "52px", right: "0.75rem", background: "#fff", border: "1px solid #e4eaf4", borderRadius: "12px", boxShadow: "0 8px 24px rgba(80,100,140,0.15)", zIndex: 200, minWidth: "210px", overflow: "hidden" }}>
             <button onClick={() => { setShowChangePw(true); setShowMenu(false); }}
               style={{ display: "block", width: "100%", padding: "0.85rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.9rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>🔑 PW変更</button>
-            <div style={{ padding: "0.5rem 1.25rem 0.3rem", fontSize: "0.65rem", color: "#a0aec0", fontWeight: "700", letterSpacing: "0.06em" }}>💾 バックアップ</div>
-            <button onClick={() => { downloadBookings(); setShowMenu(false); }}
-              style={{ display: "block", width: "100%", padding: "0.6rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.88rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>📅 予約データをCSVで保存</button>
-            <button onClick={() => { downloadCustomers(); setShowMenu(false); }}
-              style={{ display: "block", width: "100%", padding: "0.6rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.88rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>👤 顧客データをCSVで保存</button>
+            <div style={{ padding: "0.5rem 1.25rem 0.3rem", fontSize: "0.65rem", color: "#a0aec0", fontWeight: "700", letterSpacing: "0.06em" }}>💾 バックアップ（Excel）</div>
+            {[
+              { label: "過去1週間", days: 7 },
+              { label: "過去1ヶ月", days: 30 },
+              { label: "全期間", days: null },
+            ].map(({ label, days }) => (
+              <button key={label}
+                onClick={() => { buildAndDownload(label, days ? getDateFrom(days) : null); setShowMenu(false); }}
+                style={{ display: "block", width: "100%", padding: "0.6rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.88rem", color: "#2d3748", borderBottom: "1px solid #f0f4f8" }}>
+                📊 {label}
+              </button>
+            ))}
             <button onClick={() => { clearToken(); setLoggedIn(false); }}
               style={{ display: "block", width: "100%", padding: "0.85rem 1.25rem", background: "none", border: "none", textAlign: "left", cursor: "pointer", fontSize: "0.9rem", color: "#f87171" }}>ログアウト</button>
           </div>
